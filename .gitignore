@@ -1,0 +1,6 @@
+target/
+node_modules/
+**/*.rs.bk
+MVP.md
+src-tauri/resources/pdfium/*
+!src-tauri/resources/pdfium/.gitkeep

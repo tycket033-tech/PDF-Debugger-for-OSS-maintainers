@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Debugger for OSS Maintainers</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./main.js"></script>
+  </head>
+  <body>
+    <div id="window-frame" class="window-frame">
+      <header id="window-titlebar" class="window-titlebar" aria-label="Application window titlebar">
+        <div id="window-drag-region" class="window-drag-region" title="Drag window">
+          <div class="window-titlebar-brand">
+            <span class="window-titlebar-mark">PDF</span>
+            <span class="window-titlebar-title">PDF Debugger</span>
+          </div>
+          <div class="window-menu" data-no-drag>
+            <button
+              id="file-menu-button"
+              class="window-menu-button"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+            >
+              File
+            </button>
+            <div id="file-menu" class="window-menu-popover" role="menu" hidden>
+              <button id="file-menu-save" class="window-menu-item" type="button" role="menuitem" disabled>
+                <span>Save</span>
+                <span class="window-menu-shortcut">Ctrl+S</span>
+              </button>
+              <button id="file-menu-save-as" class="window-menu-item" type="button" role="menuitem" disabled>
+                <span>Save As</span>
+                <span class="window-menu-shortcut">Ctrl+Shift+S</span>
+              </button>
+            </div>
+          </div>
+          <button
+            id="appearance-toggle"
+            class="window-menu-button"
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            data-no-drag
+          >
+            Display
+          </button>
+          <div id="window-titlebar-subtitle" class="window-titlebar-subtitle" aria-hidden="true"></div>
+        </div>
+        <div class="window-controls" aria-label="Window controls">
+          <button id="window-minimize" class="window-control-button" type="button" title="Minimize" aria-label="Minimize window">−</button>
+          <button id="window-maximize" class="window-control-button" type="button" title="Maximize" aria-label="Maximize window">□</button>
+          <button id="window-close" class="window-control-button window-control-close" type="button" title="Close" aria-label="Close window">×</button>
+        </div>
+      </header>
+      <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">PDF</div>
+          <div>
+            <div class="brand-title">PDF Debugger</div>
+            <div class="brand-subtitle">OSS Maintainers</div>
+          </div>
+        </div>
+
+        <nav class="nav-group" aria-label="Workspace">
+          <button class="nav-item is-active" type="button" data-workspace-tab="overview">
+            <span class="nav-icon">◇</span>
+            Overview
+          </button>
+          <button class="nav-item" type="button" data-workspace-tab="object">
+            <span class="nav-icon">▦</span>
+            Inspector
+          </button>
+          <button class="nav-item" type="button" data-workspace-tab="trailer">
+            <span class="nav-icon">▤</span>
+            Trailer
+          </button>
+          <button class="nav-item" type="button" data-workspace-tab="page">
+            <span class="nav-icon">□</span>
+            Pages
+          </button>
+          <button class="nav-item" type="button" data-workspace-tab="annots">
+            <span class="nav-icon">▩</span>
+            Annots
+          </button>
+          <button class="nav-item" type="button" data-workspace-tab="acroform">
+            <span class="nav-icon">▧</span>
+            AcroForm
+          </button>
+        </nav>
+
+        <section class="tree-panel" aria-label="Object tree">
+          <div class="tree-header">
+            <span>Object Tree</span>
+            <span id="tree-count" class="count-pill">0</span>
+          </div>
+          <label class="object-tree-search search-field">
+            <span class="sr-only">Search object tree</span>
+            <input
+              id="object-tree-search"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Search object..."
+              aria-label="Search object tree by label or reference"
+            />
+          </label>
+          <div id="object-tree-search-status" class="object-tree-search-status" aria-live="polite" hidden></div>
+          <div id="object-tree" class="object-tree empty-tree">
+            Open a PDF to populate the structure.
+          </div>
+        </section>
+
+        <div class="sidebar-footer">
+          <span class="status-dot"></span>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="toolbar">
+          <div class="workspace-tab-area">
+            <nav id="workspace-tabs" class="workspace-tabs" role="tablist" aria-label="Open debugger tabs"></nav>
+            <div class="workspace-tab-overflow">
+              <button
+                id="workspace-tab-overflow-button"
+                class="workspace-tab-overflow-button"
+                type="button"
+                title="More tabs"
+                aria-label="More tabs"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                hidden
+              >
+                ⋯
+              </button>
+              <div id="workspace-tab-overflow-menu" class="workspace-tab-overflow-menu" role="menu" hidden></div>
+            </div>
+          </div>
+          <div class="toolbar-actions">
+            <div class="appearance-control">
+              <section id="appearance-panel" class="appearance-panel" aria-label="Display settings" hidden>
+                <div class="appearance-header">
+                  <div>
+                    <div class="appearance-title">Display</div>
+                    <div class="appearance-subtitle">Local theme and font settings</div>
+                  </div>
+                  <div class="appearance-actions">
+                    <button id="appearance-reset-columns" class="secondary-button compact-button" type="button">Reset Columns</button>
+                    <button id="appearance-reset" class="secondary-button compact-button" type="button">Reset Display</button>
+                  </div>
+                </div>
+                <label class="appearance-field">
+                  <span>Theme</span>
+                  <select id="appearance-theme">
+                    <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                </label>
+                <label class="appearance-field">
+                  <span>UI font</span>
+                  <select id="ui-font-family">
+                    <option value="system">System default</option>
+                    <option value="segoe">Segoe UI</option>
+                    <option value="yahei">Microsoft YaHei</option>
+                    <option value="simsun">SimSun</option>
+                    <option value="arial">Arial</option>
+                    <option value="inter">Inter / sans-serif</option>
+                  </select>
+                </label>
+                <label class="appearance-field">
+                  <span>UI size</span>
+                  <select id="ui-font-size">
+                    <option value="12">12 px</option>
+                    <option value="13">13 px</option>
+                    <option value="14">14 px</option>
+                    <option value="15">15 px</option>
+                    <option value="16">16 px</option>
+                    <option value="17">17 px</option>
+                    <option value="18">18 px</option>
+                  </select>
+                </label>
+                <label class="appearance-field">
+                  <span>Mono font</span>
+                  <select id="mono-font-family">
+                    <option value="system">System monospace</option>
+                    <option value="consolas">Consolas</option>
+                    <option value="cascadia">Cascadia Mono</option>
+                    <option value="jetbrains">JetBrains Mono</option>
+                    <option value="menlo">Menlo</option>
+                    <option value="monospace">monospace fallback</option>
+                  </select>
+                </label>
+                <label class="appearance-field">
+                  <span>Mono size</span>
+                  <select id="mono-font-size">
+                    <option value="11">11 px</option>
+                    <option value="12">12 px</option>
+                    <option value="13">13 px</option>
+                    <option value="14">14 px</option>
+                    <option value="15">15 px</option>
+                    <option value="16">16 px</option>
+                  </select>
+                </label>
+              </section>
+            </div>
+            <button id="open-pdf" class="primary-button" type="button">Open PDF</button>
+          </div>
+        </header>
+
+        <section id="document-loading" class="document-loading" aria-live="polite" aria-hidden="true" hidden>
+          <div class="document-loading-spinner" aria-hidden="true"></div>
+          <div class="document-loading-copy">
+            <div class="document-loading-title">Loading PDF</div>
+            <div id="document-loading-message" class="document-loading-message">Preparing document metadata...</div>
+          </div>
+        </section>
+
+        <section class="tab-panels">
+          <section id="tab-overview" class="tab-panel is-active" role="tabpanel" aria-labelledby="tab-overview-button" data-tab-panel="overview">
+            <section id="drop-zone" class="drop-zone" aria-label="Drop a PDF file here">
+              <div class="drop-copy">
+                <div class="drop-title">Select or drag a local PDF</div>
+                <p>Files stay on this machine. The Rust core parses metadata for the workspace.</p>
+              </div>
+              <button id="open-pdf-secondary" class="secondary-button" type="button">Choose PDF</button>
+            </section>
+
+            <section class="recent-files-panel" aria-label="Recently opened PDFs">
+              <div class="recent-files-header">
+                <div>
+                  <div class="panel-title">Recent PDFs</div>
+                  <div class="panel-subtitle">Reopen local documents from this machine</div>
+                </div>
+                <button id="clear-recent-files" class="secondary-button compact-button" type="button">Clear</button>
+              </div>
+              <div id="recent-files-list" class="recent-files-list empty-list">
+                No recent PDFs yet.
+              </div>
+            </section>
+
+            <section id="error-panel" class="error-panel" hidden>
+              <div id="error-panel-title" class="panel-title">Recoverable error</div>
+              <p id="error-message"></p>
+            </section>
+
+            <section class="summary-grid" aria-label="PDF summary">
+              <article class="summary-card">
+                <span class="label">File</span>
+                <strong id="file-name">No PDF selected</strong>
+                <span id="file-size" class="muted">-</span>
+              </article>
+              <article class="summary-card">
+                <span class="label">PDF Version</span>
+                <strong id="pdf-version">-</strong>
+                <span class="muted">Header version</span>
+              </article>
+              <article class="summary-card">
+                <span class="label">Pages</span>
+                <strong id="page-count">-</strong>
+                <span class="muted">Detected count</span>
+              </article>
+              <article class="summary-card">
+                <span class="label">Objects</span>
+                <strong id="object-count">-</strong>
+                <span class="muted">Indirect objects</span>
+              </article>
+            </section>
+
+            <section class="content-grid">
+              <article class="panel">
+                <div class="panel-header">
+                  <div>
+                    <div class="panel-title">Open State</div>
+                    <div class="panel-subtitle">Full document parser status</div>
+                  </div>
+                  <span id="load-state" class="state-pill">Idle</span>
+                </div>
+                <div class="open-status-grid" aria-label="Open and rendering status">
+                  <div>
+                    <span>Document</span>
+                    <strong id="document-open-status">No PDF open</strong>
+                  </div>
+                  <div>
+                    <span>Page List</span>
+                    <strong id="page-list-status">Idle</strong>
+                  </div>
+                  <div>
+                    <span>Current Preview</span>
+                    <strong id="overview-preview-status">Not requested</strong>
+                  </div>
+                </div>
+                <p class="panel-note">Use Object Tree, Inspector, Trailer, Pages, and AcroForm to inspect the opened PDF. Page previews are rendered per selected page.</p>
+              </article>
+
+              <article class="panel">
+                <div class="panel-header">
+                  <div>
+                    <div class="panel-title">Parser Details</div>
+                    <div class="panel-subtitle">Shared parser summary</div>
+                  </div>
+                </div>
+                <dl class="details-list">
+                  <div>
+                    <dt>Streams</dt>
+                    <dd id="stream-count">-</dd>
+                  </div>
+                  <div>
+                    <dt>Xref entries</dt>
+                    <dd id="xref-count">-</dd>
+                  </div>
+                  <div>
+                    <dt>Encrypted</dt>
+                    <dd id="encrypted">-</dd>
+                  </div>
+                  <div>
+                    <dt>Parse warnings</dt>
+                    <dd id="parse-warning-count">-</dd>
+                  </div>
+                </dl>
+              </article>
+            </section>
+          </section>
+
+          <section id="tab-object" class="tab-panel" role="tabpanel" aria-labelledby="tab-object-button" data-tab-panel="object" hidden>
+            <article class="panel inspector-panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Object Inspector</div>
+                  <div id="inspector-subtitle" class="panel-subtitle">Select an object from the tree</div>
+                </div>
+                <span id="inspector-state" class="state-pill">Idle</span>
+              </div>
+
+              <section id="inspector-error" class="inline-error" hidden></section>
+
+              <dl class="details-list inspector-details">
+                <div>
+                  <dt>Reference</dt>
+                  <dd id="inspector-reference">-</dd>
+                </div>
+                <div>
+                  <dt>Object type</dt>
+                  <dd id="inspector-type">-</dd>
+                </div>
+                <div>
+                  <dt>Value summary</dt>
+                  <dd id="inspector-summary">-</dd>
+                </div>
+                <div>
+                  <dt>Raw range</dt>
+                  <dd id="inspector-range">-</dd>
+                </div>
+                <div>
+                  <dt>Raw length</dt>
+                  <dd id="inspector-raw-length">-</dd>
+                </div>
+                <div>
+                  <dt>Dictionary keys</dt>
+                  <dd id="inspector-keys">-</dd>
+                </div>
+              </dl>
+
+              <section id="stream-section" class="stream-section" hidden>
+                <div class="section-heading-row">
+                  <div class="section-title">Stream</div>
+                  <button id="open-stream-details" class="secondary-button compact-button" type="button" disabled>
+                    Open Stream Details
+                  </button>
+                </div>
+                <dl class="details-list inspector-details">
+                  <div>
+                    <dt>Declared length</dt>
+                    <dd id="stream-declared-length">-</dd>
+                  </div>
+                  <div>
+                    <dt>Actual length</dt>
+                    <dd id="stream-actual-length">-</dd>
+                  </div>
+                  <div>
+                    <dt>Filters</dt>
+                    <dd id="stream-filters">-</dd>
+                  </div>
+                  <div>
+                    <dt>Decoded length</dt>
+                    <dd id="stream-decoded-length">-</dd>
+                  </div>
+                  <div>
+                    <dt>Decode issues</dt>
+                    <dd id="stream-decode-issues">-</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section class="object-details-section">
+                <div class="section-heading-row object-edit-heading">
+                  <div>
+                    <div class="section-title">Object Details</div>
+                    <div id="object-edit-status" class="object-edit-status">Read-only until a value is edited.</div>
+                  </div>
+                  <div class="object-edit-actions">
+                    <button id="revert-object-edits" class="secondary-button compact-button" type="button" disabled>
+                      Revert Object
+                    </button>
+                    <button id="revert-all-edits" class="secondary-button compact-button" type="button" disabled>
+                      Revert All
+                    </button>
+                    <button id="save-modified-pdf" class="primary-button compact-button" type="button" disabled>
+                      Save As
+                    </button>
+                  </div>
+                </div>
+                <div id="object-details-scroll" class="trailer-scroll object-details-scroll">
+                  <table class="trailer-table object-details-table" aria-label="Selected object structure">
+                    <colgroup>
+                      <col data-tree-column="key" />
+                      <col data-tree-column="type" />
+                      <col data-tree-column="value" />
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th scope="col">
+                          <span class="column-heading">Key</span>
+                          <span class="column-resizer" data-resize-column="key" role="separator" aria-orientation="vertical" aria-label="Resize Key column"></span>
+                        </th>
+                        <th scope="col">
+                          <span class="column-heading">Type</span>
+                          <span class="column-resizer" data-resize-column="type" role="separator" aria-orientation="vertical" aria-label="Resize Type column"></span>
+                        </th>
+                        <th scope="col">
+                          <span class="column-heading">Value</span>
+                          <span class="column-resizer" data-resize-column="value" role="separator" aria-orientation="vertical" aria-label="Resize Value column"></span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody id="object-details-entries">
+                      <tr>
+                        <td colspan="3" class="empty-table-cell">Select an object to inspect its structure.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            </article>
+          </section>
+
+          <section id="tab-stream" class="tab-panel" role="tabpanel" aria-labelledby="tab-stream-button" data-tab-panel="stream" hidden>
+            <article class="panel stream-viewer-panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Stream Viewer</div>
+                  <div id="stream-viewer-subtitle" class="panel-subtitle">Select a stream object</div>
+                </div>
+                <span id="stream-viewer-state" class="state-pill">Idle</span>
+              </div>
+
+              <section id="stream-viewer-error" class="inline-error" hidden></section>
+              <section id="stream-viewer-status" class="inline-status" hidden></section>
+
+              <dl class="details-list stream-viewer-details">
+                <div>
+                  <dt>Reference</dt>
+                  <dd id="stream-viewer-reference">-</dd>
+                </div>
+                <div>
+                  <dt>Raw length</dt>
+                  <dd id="stream-viewer-raw-length">-</dd>
+                </div>
+                <div>
+                  <dt>Byte range</dt>
+                  <dd id="stream-viewer-byte-range">-</dd>
+                </div>
+                <div>
+                  <dt>Decoded length</dt>
+                  <dd id="stream-viewer-decoded-length">-</dd>
+                </div>
+                <div>
+                  <dt>Filters</dt>
+                  <dd id="stream-viewer-filters">-</dd>
+                </div>
+                <div>
+                  <dt>Decode issues</dt>
+                  <dd id="stream-viewer-issues">-</dd>
+                </div>
+              </dl>
+
+              <div class="stream-mode-tabs" role="tablist" aria-label="Stream viewer modes">
+                <button id="stream-mode-hex" class="stream-mode-button is-active" type="button" data-mode="hex">
+                  Hex
+                </button>
+                <button id="stream-mode-decoded" class="stream-mode-button" type="button" data-mode="decoded">
+                  Decoded
+                </button>
+              </div>
+
+              <div class="stream-actions" aria-label="Stream actions">
+                <button id="copy-decoded-stream" class="secondary-button compact-button" type="button" disabled>
+                  Copy Decoded
+                </button>
+                <button id="export-decoded-stream" class="secondary-button compact-button" type="button" disabled>
+                  Export Decoded
+                </button>
+                <button id="edit-decoded-stream" class="secondary-button compact-button" type="button" disabled>
+                  Edit Decoded
+                </button>
+                <button id="render-stream-image" class="secondary-button compact-button" type="button" disabled>
+                  Render Image
+                </button>
+              </div>
+
+              <section id="stream-edit-panel" class="stream-edit-panel" hidden>
+                <div class="stream-edit-toolbar">
+                  <div>
+                    <div class="section-title">Decoded Content Draft</div>
+                    <div id="stream-edit-hint" class="panel-subtitle">
+                      Edits update the session draft immediately after Apply. Save writes the current PDF; Save As writes a separate copy.
+                    </div>
+                  </div>
+                  <div class="stream-edit-actions">
+                    <button id="apply-stream-edit" class="primary-button compact-button" type="button">
+                      Apply Draft
+                    </button>
+                    <button id="cancel-stream-edit" class="secondary-button compact-button" type="button">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <textarea id="stream-edit-textarea" class="stream-edit-textarea" spellcheck="false"></textarea>
+              </section>
+
+              <section id="stream-image-preview" class="stream-image-preview" hidden>
+                <div class="stream-image-preview-toolbar">
+                  <div>
+                    <div id="stream-image-preview-title" class="section-title">Image Preview</div>
+                    <div id="stream-image-preview-meta" class="panel-subtitle">Rendered locally from the selected image stream.</div>
+                  </div>
+                  <button id="close-stream-image-preview" class="secondary-button compact-button" type="button">
+                    Close
+                  </button>
+                </div>
+                <div class="stream-image-preview-frame">
+                  <img id="stream-image-preview-image" alt="Rendered PDF image stream preview" />
+                </div>
+              </section>
+
+              <div id="stream-viewer-content" class="stream-viewer-content">Select a stream object to inspect hex or decoded bytes.</div>
+            </article>
+          </section>
+
+          <section id="tab-trailer" class="tab-panel" role="tabpanel" aria-labelledby="tab-trailer-button" data-tab-panel="trailer" hidden>
+            <article class="panel trailer-panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Trailer</div>
+                  <div id="trailer-subtitle" class="panel-subtitle">Open a PDF to inspect the trailer dictionary</div>
+                </div>
+                <span id="trailer-state" class="state-pill">Idle</span>
+              </div>
+
+              <section id="trailer-error" class="inline-error" hidden></section>
+
+              <div id="trailer-scroll" class="trailer-scroll">
+                <table class="trailer-table" aria-label="PDF trailer dictionary entries">
+                  <colgroup>
+                    <col data-tree-column="key" />
+                    <col data-tree-column="type" />
+                    <col data-tree-column="value" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th scope="col">
+                        <span class="column-heading">Key</span>
+                        <span class="column-resizer" data-resize-column="key" role="separator" aria-orientation="vertical" aria-label="Resize Key column"></span>
+                      </th>
+                      <th scope="col">
+                        <span class="column-heading">Type</span>
+                        <span class="column-resizer" data-resize-column="type" role="separator" aria-orientation="vertical" aria-label="Resize Type column"></span>
+                      </th>
+                      <th scope="col">
+                        <span class="column-heading">Value</span>
+                        <span class="column-resizer" data-resize-column="value" role="separator" aria-orientation="vertical" aria-label="Resize Value column"></span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody id="trailer-entries">
+                    <tr>
+                      <td colspan="3" class="empty-table-cell">Open a PDF to populate trailer entries.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </section>
+
+          <section id="tab-acroform" class="tab-panel" role="tabpanel" aria-labelledby="tab-acroform-button" data-tab-panel="acroform" hidden>
+            <article class="panel acroform-panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">AcroForm</div>
+                  <div id="acroform-subtitle" class="panel-subtitle">Open a PDF to inspect form fields</div>
+                </div>
+                <span id="acroform-state" class="state-pill">Idle</span>
+              </div>
+
+              <section id="acroform-error" class="inline-error" hidden></section>
+              <section id="acroform-warnings" class="inline-status" data-kind="info" hidden></section>
+
+              <div class="acroform-toolbar">
+                <label class="search-field" for="acroform-search">
+                  <span>Search</span>
+                  <input id="acroform-search" type="search" placeholder="Field name" autocomplete="off" />
+                </label>
+                <span id="acroform-count" class="count-pill">0</span>
+              </div>
+
+              <div id="acroform-list" class="acroform-list empty-list">
+                Open a PDF to populate AcroForm fields.
+              </div>
+            </article>
+          </section>
+
+          <section id="tab-annots" class="tab-panel" role="tabpanel" aria-labelledby="tab-annots-button" data-tab-panel="annots" hidden>
+            <article class="panel annots-panel">
+              <div class="panel-header">
+                <div>
+                  <div class="panel-title">Annots</div>
+                  <div id="annots-subtitle" class="panel-subtitle">Open a PDF to inspect annotations</div>
+                </div>
+                <span id="annots-state" class="state-pill">Idle</span>
+              </div>
+
+              <section id="annots-error" class="inline-error" hidden></section>
+              <section id="annots-warnings" class="inline-status" data-kind="info" hidden></section>
+
+              <div class="annots-toolbar">
+                <label class="search-field" for="annots-search">
+                  <span>Search</span>
+                  <input id="annots-search" type="search" placeholder="Page, object, subtype, contents" autocomplete="off" />
+                </label>
+                <span id="annots-count" class="count-pill">0</span>
+              </div>
+
+              <div id="annots-list" class="annots-list empty-list">
+                Open a PDF to populate annotations.
+              </div>
+            </article>
+          </section>
+
+          <section id="tab-page" class="tab-panel" role="tabpanel" aria-labelledby="tab-page-button" data-tab-panel="page" hidden>
+            <section class="page-debug-workspace" aria-label="Page debugging workspace">
+              <article class="panel page-list-panel">
+                <div class="panel-header">
+                  <div>
+                    <div class="panel-title">Page List</div>
+                    <div class="panel-subtitle">Parsed page tree order</div>
+                  </div>
+                  <span id="page-list-count" class="count-pill">0</span>
+                </div>
+
+                <div id="page-list" class="page-list empty-list">
+                  Open a PDF to populate pages.
+                </div>
+              </article>
+
+              <article class="panel page-preview-panel">
+                <div class="page-preview-placeholder">
+                  <div class="page-preview-title">Page Preview</div>
+                  <div class="page-preview-toolbar" aria-label="Page preview zoom controls">
+                    <button id="page-zoom-out" class="secondary-button compact-button" type="button" title="Zoom out" disabled>
+                      -
+                    </button>
+                    <span id="page-zoom-label" class="page-zoom-label">100%</span>
+                    <button id="page-zoom-in" class="secondary-button compact-button" type="button" title="Zoom in" disabled>
+                      +
+                    </button>
+                    <button id="page-zoom-reset" class="secondary-button compact-button" type="button" title="Reset zoom" disabled>
+                      Reset
+                    </button>
+                  </div>
+                  <div class="page-preview-status-row">
+                    <span id="page-preview-state" class="page-preview-state" data-state="idle">Idle</span>
+                    <p id="page-preview-status">Select a page to render a PDFium preview.</p>
+                  </div>
+                  <section id="page-preview-draft-status" class="inline-status page-preview-draft-status" data-kind="info" hidden>
+                    <div>
+                      <strong id="page-preview-draft-title">Draft preview</strong>
+                      <span id="page-preview-draft-message">
+                        Unsaved object edits can be previewed through a temporary local PDF. Save writes the current PDF; Save As writes a separate copy.
+                      </span>
+                    </div>
+                    <button id="save-edits-and-rerender" class="secondary-button compact-button" type="button" disabled>
+                      Save As and Re-render
+                    </button>
+                  </section>
+                  <section id="page-preview-error" class="inline-error" hidden></section>
+                  <figure id="page-preview-figure" class="page-preview-figure">
+                    <div id="page-preview-viewport" class="page-preview-viewport">
+                      <div id="page-preview-empty" class="page-preview-empty">
+                        <div class="page-preview-empty-icon" aria-hidden="true">□</div>
+                        <div>
+                          <div id="page-preview-empty-title" class="page-preview-empty-title">No page rendered</div>
+                          <div id="page-preview-empty-message" class="page-preview-empty-message">
+                            Select a page to render a PDFium preview.
+                          </div>
+                        </div>
+                      </div>
+                      <div class="page-preview-canvas">
+                        <div id="page-preview-stage" class="page-preview-stage">
+                          <img id="page-preview-image" alt="" hidden />
+                          <button id="page-object-overlay" class="page-object-overlay" type="button" hidden>
+                            <span id="page-object-overlay-label">Selected object</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <figcaption id="page-preview-caption"></figcaption>
+                  </figure>
+                </div>
+              </article>
+
+              <div id="page-metadata-placeholder" class="page-metadata-placeholder" hidden></div>
+              <article id="page-metadata-panel" class="panel page-metadata-panel">
+                <div class="panel-header">
+                  <div>
+                    <div class="panel-title">Page Details</div>
+                    <div id="page-metadata-subtitle" class="panel-subtitle">Select a page</div>
+                  </div>
+                  <div class="page-metadata-header-actions">
+                    <button
+                      id="page-metadata-float"
+                      class="secondary-button compact-button page-metadata-float-button"
+                      type="button"
+                      title="Float page details"
+                      aria-label="Float page details panel"
+                    >
+                      Float
+                    </button>
+                    <span id="page-metadata-state" class="state-pill">Idle</span>
+                  </div>
+                </div>
+
+                <dl class="details-list page-details">
+                  <div>
+                    <dt>Reference</dt>
+                    <dd id="page-reference">-</dd>
+                  </div>
+                  <div>
+                    <dt>Rotation</dt>
+                    <dd id="page-rotation">-</dd>
+                  </div>
+                  <div>
+                    <dt>MediaBox</dt>
+                    <dd id="page-mediabox">-</dd>
+                  </div>
+                  <div>
+                    <dt>CropBox</dt>
+                    <dd id="page-cropbox">-</dd>
+                  </div>
+                  <div>
+                    <dt>BleedBox</dt>
+                    <dd id="page-bleedbox">-</dd>
+                  </div>
+                  <div>
+                    <dt>TrimBox</dt>
+                    <dd id="page-trimbox">-</dd>
+                  </div>
+                  <div>
+                    <dt>ArtBox</dt>
+                    <dd id="page-artbox">-</dd>
+                  </div>
+                </dl>
+
+                <section class="page-resource-section">
+                  <div class="section-title">Resources</div>
+                  <div class="page-resource-grid">
+                    <div>
+                      <span>Fonts</span>
+                      <strong id="page-resource-fonts">0</strong>
+                    </div>
+                    <div>
+                      <span>XObjects</span>
+                      <strong id="page-resource-xobjects">0</strong>
+                    </div>
+                    <div>
+                      <span>Images</span>
+                      <strong id="page-resource-images">0</strong>
+                    </div>
+                    <div>
+                      <span>Contents</span>
+                      <strong id="page-resource-contents">0</strong>
+                    </div>
+                    <div>
+                      <span>Annotations</span>
+                      <strong id="page-resource-annotations">0</strong>
+                    </div>
+                  </div>
+                </section>
+
+                <section id="page-links-section" class="references-section page-references-section" hidden>
+                  <div class="page-references-header">
+                    <div class="section-title">Page References</div>
+                    <span id="page-reference-count" class="count-pill">0</span>
+                  </div>
+                  <label class="search-field page-reference-search" for="page-reference-search">
+                    <span>Search</span>
+                    <input id="page-reference-search" type="search" placeholder="Label or object ref" autocomplete="off" />
+                  </label>
+                  <div id="page-object-links" class="reference-list"></div>
+                </section>
+
+                <section class="page-objects-section">
+                  <div class="section-title">Page Objects</div>
+                  <div id="page-objects-status" class="muted">Select a page to inspect page objects.</div>
+                  <div id="page-objects-list" class="page-objects-list empty-list">
+                    Select a page to populate page objects.
+                  </div>
+                </section>
+
+                <section id="page-object-warnings-section" class="page-object-warnings-section" hidden>
+                  <div class="section-title">Recoverable warnings</div>
+                  <div id="page-object-warnings" class="page-object-warnings"></div>
+                </section>
+
+                <section id="page-selected-object-section" class="page-selected-object-section">
+                  <div class="section-title">Object Properties</div>
+                  <div id="page-selected-object-empty" class="empty-list">
+                    Select a page object to inspect properties.
+                  </div>
+                  <table id="page-selected-object-table" class="page-object-properties" hidden>
+                    <tbody id="page-selected-object-properties"></tbody>
+                  </table>
+                  <p id="page-selected-object-note" class="page-selected-object-note"></p>
+                  <button id="page-selected-object-open" class="secondary-button compact-button" type="button">
+                    Open object tab
+                  </button>
+                </section>
+              </article>
+            </section>
+          </section>
+
+        </section>
+      </main>
+      </div>
+    </div>
+  </body>
+</html>
